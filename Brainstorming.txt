@@ -1,0 +1,42 @@
+Graph Algorithms:
+Kruskal’s/Prim's
+
+
+- Create a copy of the plot map in the Router constructor
+- X component is the distance between two coordinates using the distance formula
+- Y component is the elevation
+- X + Y = distance
+
+- Distance for 2 3D points AB = sqrt((x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2)
+Router.h
+---
+Public variables: short map[1000][1000], 
+
+3 5
+1 3
+0 2
+0 3
+ 3 55 29 1 2
+ 5 62 46 3 6
+ 3 59 83 4 8
+ 5 72 51 3 6
+ 4 71 34 2 6
+62 - 46 = 16
+62 - 5 = 57
+
+(62 - 3) ^ 2 + 10 = 3491
+(5 - 3) ^ 2 + 10 = 14
+                += 3505
+
+- Adjacent map plots mean left and right in the array
+- Don't have a specific point to start on the map can start anywhere.
+
+- Choose 3 and 5 first because they have a lower cost
+
+Game Plan:
+- Store all cities in a queue.
+- If we find shortest path from 62 to all other vertices, we can see cost from 62 to 5 and 62 to 3 and choose 
+smallest one.
+- Take that one out of the queue (5 or 3).
+- Next, we do the same thing but with the value taken off the heap. We can see cost from there to all other
+vertices in the heap. Choose smallest one to take off heap. Repeat.
