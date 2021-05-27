@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <climits>
+#include <cmath>
 using namespace std;
 
 
@@ -34,6 +35,12 @@ Router::Router(const Map1000 *map2, int width) : heap(width * width)
 
 Router::~Router()
 {
+    for (int i = 0; i < width_; i++)
+    {
+        delete [] map_[i];
+    }
+
+    delete [] map_;
 }  // ~Router()
 
 Plot Plot::getAdjacentPlot(int i, int width_)
@@ -93,12 +100,14 @@ Plot Plot::getAdjacentPlot(int i, int width_)
 
 void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int &pathCount)
 {
+    pathCount = 0;
     int numCitiesConnected = 0;
     Plot heapPlot;
 
     int shortestDistance[width_][width_];
+    Plot previousVertex[width_][width_];
     bool knownArray[width_][width_];
-
+    
     for (int i = 0; i < width_; i++)
     {
         for (int j = 0; j < width_; j++)
@@ -111,13 +120,29 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
     // default Plot constructor implicitly sets weight to 0
     heap.insert(Plot(cityPos[0].x,cityPos[0].y));
 
+    int lastCityX;
+    int lastCityY;
+    
     while (numCitiesConnected < cityCount)
     {
         heap.deleteMin(heapPlot);
         int x = heapPlot.x;
         int y = heapPlot.y;
-        int elevation = map_[heapPlot.x][heapPlot.y];
+        short elevation = map_[heapPlot.x][heapPlot.y];
 
+        for (int i = 0; i < cityCount; i++)
+        {
+            if (x == cityPos[i].x && y== cityPos[i].y)
+            {
+                // adjacentPlot.weight = 0;
+
+                lastCityX = cityPos[i].x;
+                lastCityY = cityPos[i].y;
+
+                numCitiesConnected++;
+            }
+        }
+                
         if(knownArray[x][y] == false)
             knownArray[x][y] = true;
         else   
@@ -135,37 +160,46 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
         
         for (int i = 0; i < 7; i++)
         {
-            Plot adjacentPlot = heapPlot.getAdjacentPlot(i, width_);
-            int adjacentPlotElevation = map_[adjacentPlot.x][adjacentPlot.y];
-            
-            int weight = pow(adjacentPlotElevation - elevation, 2) + 10;
 
+            Plot adjacentPlot = heapPlot.getAdjacentPlot(i, width_);
+            if (knownArray[adjacentPlot.x][adjacentPlot.y] == true)
+                continue;
+            adjacentPlot.weight = shortestDistance[adjacentPlot.x][adjacentPlot.y];
+
+            
             if (adjacentPlot.x == -1 && adjacentPlot.y == -1)
                 continue;
+
+            short adjacentPlotElevation = map_[adjacentPlot.x][adjacentPlot.y];
+            
+            int weight = (int)(pow(abs(adjacentPlotElevation - elevation), 2) + 10);
             
             if (weight + heapPlot.weight < shortestDistance[adjacentPlot.x][adjacentPlot.y])
             {
 
                 adjacentPlot.weight = weight;
                 shortestDistance[adjacentPlot.x][adjacentPlot.y] = adjacentPlot.weight;
-                
-                paths[pathCount].startX = x;
-                paths[pathCount].startY = y;
-                paths[pathCount].endX = adjacentPlot.x;
-                paths[pathCount].endY = adjacentPlot.y;
-                pathCount++;
-
-                for (int i = 0; i < cityCount; i++)
-                {
-                    if (adjacentPlot.x == cityPos[i].x && adjacentPlot.y == cityPos[i].y)
-                    {
-                        adjacentPlot.weight = 0;
-                        numCitiesConnected++;
-                    }
-                }
+                // update pv
+                adjacentPlot.previousVertex = PreviousVertex(x,y);
+                previousVertex[adjacentPlot.x][adjacentPlot.y] = heapPlot;
                 
                 heap.insert(adjacentPlot);
             }
         }
     }
+
+    // Traceback
+    Plot lastCityPlot = previousVertex[lastCityX][lastCityY];
+
+    while(lastCityPlot.previousVertex.x != -1 && lastCityPlot.previousVertex.y != -1)
+    {
+        paths[pathCount].startX = lastCityPlot.previousVertex.x;
+        paths[pathCount].startY = lastCityPlot.previousVertex.y;
+        paths[pathCount].endX = lastCityPlot.x;
+        paths[pathCount].endY = lastCityPlot.y;
+        pathCount++;
+
+        lastCityPlot = previousVertex[lastCityPlot.previousVertex.x][lastCityPlot.previousVertex.y];
+    }
+
 } // findRoutes()

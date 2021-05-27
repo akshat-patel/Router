@@ -6,15 +6,24 @@
 #include "RouterRunner.h"
 #include "BinaryHeap.h"
 #include <cmath>
+
+class PreviousVertex
+{
+  public:
+    PreviousVertex(int x_, int y_) : x(x_), y(y_) {}
+    PreviousVertex() : x(-1), y(-1) {}
+    int x;
+    int y;
+};
 class Plot
 {
   public:
-    Plot(): weight(-1), x(-1), y(-1) {}
-    Plot(int x_, int y_, int change_in_elevation) : x(x_), y(y_)  
+    Plot(): previousVertex(-1, -1), weight(-1), x(-1), y(-1) {}
+    Plot(int x_, int y_, int change_in_elevation) : previousVertex(-1, -1), x(x_), y(y_)  
     {
       weight = (int) pow(change_in_elevation, 2) + 10;
     }
-    Plot(int x_, int y_) : weight(0), x(x_), y(y_)  {} // for source vertex
+    Plot(int x_, int y_) : previousVertex(-1, -1), weight(0), x(x_), y(y_)  {} // for source vertex
     bool operator<(const Plot& rhs) const
     {
       return weight < rhs.weight;
@@ -84,12 +93,12 @@ class Plot
         return Plot(x + 1, y - 1);
     }
     Plot getAdjacentPlot(int i, int width_);
-  
+
+    PreviousVertex previousVertex; 
     int weight;
     int x;
     int y;
 };
-
 // class AdjListNode
 // {
   // public:

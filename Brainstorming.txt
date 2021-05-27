@@ -34,6 +34,12 @@ Public variables: short map[1000][1000],
 
 - Choose 3 and 5 first because they have a lower cost
 
+What we should be doing:
+- Take first coordinate out of heap, mark true and set dv to zero
+- Look at all of the adjacent vertices and deleteMin()
+59,51, 
+
+
 Game Plan:
 - Store all cities in a queue.
 - If we find shortest path from 62 to all other vertices, we can see cost from 62 to 5 and 62 to 3 and choose 
