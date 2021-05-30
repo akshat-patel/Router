@@ -18,7 +18,7 @@ void Router::printMap()
     }
 }
 
-Router::Router(const Map1000 *map2, int width) : heap(width * width)
+Router::Router(const Map1000 *map2, int width) : heap(width * width * 2)
 {
     map_ = new short*[width];
     for (int i = 0; i < width; i++)
@@ -101,13 +101,13 @@ Plot Plot::getAdjacentPlot(int i, int width_)
 void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int &pathCount)
 {
     pathCount = 0;
-    int numCitiesConnected = 0;
+    int numCitiesConnected = 1;
     Plot heapPlot;
 
     int shortestDistance[width_][width_];
-    Plot previousVertex[width_][width_];
     bool knownArray[width_][width_];
-    
+    Plot plots[width_][width_];
+
     for (int i = 0; i < width_; i++)
     {
         for (int j = 0; j < width_; j++)
@@ -130,23 +130,49 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
         int y = heapPlot.y;
         short elevation = map_[heapPlot.x][heapPlot.y];
 
-        for (int i = 0; i < cityCount; i++)
+        if(x == cityPos[0].x && y == cityPos[0].y)
         {
-            if (x == cityPos[i].x && y== cityPos[i].y)
-            {
-                // adjacentPlot.weight = 0;
+            heapPlot.isCity = true;
+        }
 
+        if(knownArray[x][y] == false)
+            knownArray[x][y] = true;
+        else   
+            continue;
+
+        for (int i = 1; i < cityCount; i++)
+        {
+            if (x == cityPos[i].x && y == cityPos[i].y)
+            {
+                // adjacentPlot.weight = 0;           
                 lastCityX = cityPos[i].x;
                 lastCityY = cityPos[i].y;
+
+                heapPlot.isCity = true;
+                // Plot cityPlot = heapPlot;
+
+                // Change city weight and path node weights to 0 and reinsert
+             //   cityPlot.weight = 0;
+             //   heap.insert(cityPlot);
+    
+                if(heapPlot.previousVertex.x != -1 && heapPlot.previousVertex.y != -1)
+                {
+                    Plot previousPlot = plots[heapPlot.previousVertex.x][heapPlot.previousVertex.y];
+
+                    while(!previousPlot.isCity)
+                    {
+                     //   previousPlot.weight = 0;
+
+                        previousPlot = plots[previousPlot.previousVertex.x][previousPlot.previousVertex.y];
+
+                    //    heap.insert(previousPlot);
+                    }
+                }
 
                 numCitiesConnected++;
             }
         }
                 
-        if(knownArray[x][y] == false)
-            knownArray[x][y] = true;
-        else   
-            continue;
         // int adjacentVertexCount = 8;
         
         // if(heapPlot.isLeftEdge || heapPlot.isRightEdge || heapPlot.isTopEdge || heapPlot.isBottomEdge)
@@ -181,7 +207,7 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
                 shortestDistance[adjacentPlot.x][adjacentPlot.y] = adjacentPlot.weight;
                 // update pv
                 adjacentPlot.previousVertex = PreviousVertex(x,y);
-                previousVertex[adjacentPlot.x][adjacentPlot.y] = heapPlot;
+                plots[adjacentPlot.x][adjacentPlot.y] = adjacentPlot;
                 
                 heap.insert(adjacentPlot);
             }
@@ -189,7 +215,7 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
     }
 
     // Traceback
-    Plot lastCityPlot = previousVertex[lastCityX][lastCityY];
+    Plot lastCityPlot = plots[lastCityX][lastCityY];
 
     while(lastCityPlot.previousVertex.x != -1 && lastCityPlot.previousVertex.y != -1)
     {
@@ -199,7 +225,8 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
         paths[pathCount].endY = lastCityPlot.y;
         pathCount++;
 
-        lastCityPlot = previousVertex[lastCityPlot.previousVertex.x][lastCityPlot.previousVertex.y];
+        lastCityPlot = plots[lastCityPlot.previousVertex.x][lastCityPlot.previousVertex.y];
     }
 
+    cout << "hi" << endl;
 } // findRoutes()

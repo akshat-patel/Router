@@ -18,12 +18,12 @@ class PreviousVertex
 class Plot
 {
   public:
-    Plot(): previousVertex(-1, -1), weight(-1), x(-1), y(-1) {}
-    Plot(int x_, int y_, int change_in_elevation) : previousVertex(-1, -1), x(x_), y(y_)  
+    Plot(): previousVertex(-1, -1), weight(-1), x(-1), y(-1), isCity(false) {}
+    Plot(int x_, int y_, int change_in_elevation) : previousVertex(-1, -1), x(x_), y(y_), isCity(false)  
     {
       weight = (int) pow(change_in_elevation, 2) + 10;
     }
-    Plot(int x_, int y_) : previousVertex(-1, -1), weight(0), x(x_), y(y_)  {} // for source vertex
+    Plot(int x_, int y_) : previousVertex(-1, -1), weight(0), x(x_), y(y_), isCity(false)  {} // for source vertex
     bool operator<(const Plot& rhs) const
     {
       return weight < rhs.weight;
@@ -58,7 +58,7 @@ class Plot
     }
     bool isLowerRightCorner(int width)
     {
-      return (x == 0 && y == width - 1);
+      return (x == width - 1 && y == 0);
     }
     Plot getLeftVertex()
     {
@@ -98,6 +98,7 @@ class Plot
     int weight;
     int x;
     int y;
+    bool isCity;
 };
 // class AdjListNode
 // {
