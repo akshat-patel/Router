@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <climits>
-#include <cmath>
+
 using namespace std;
 
 
@@ -30,7 +30,6 @@ Router::Router(const Map1000 *map2, int width) : heap(width * width * 2)
         }
     }
     width_ = width;
-    printMap(); 
 } // Router()
 
 Router::~Router()
@@ -101,15 +100,23 @@ Plot Plot::getAdjacentPlot(int i, int width_)
 void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int &pathCount)
 {
     pathCount = 0;
-    int numCitiesConnected = 1;
+    int numCitiesConnected = 0;
     Plot heapPlot;
 
     int shortestDistance[width_][width_];
     bool knownArray[width_][width_];
-    Plot plots[width_][width_];
+    char isCityArray[width_][width_];
+    memset(isCityArray, '0', sizeof(isCityArray));
+    for (int i = 0; i < cityCount; i++)
+    {
+        isCityArray[cityPos[i].x][cityPos[i].y] = '1';
+    }
+    Plot **plots;
 
+    plots = new Plot*[width_];
     for (int i = 0; i < width_; i++)
     {
+        plots[i] = new Plot[width_];
         for (int j = 0; j < width_; j++)
         {
             shortestDistance[i][j] = INT_MAX;
@@ -120,8 +127,8 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
     // default Plot constructor implicitly sets weight to 0
     heap.insert(Plot(cityPos[0].x,cityPos[0].y));
 
-    int lastCityX;
-    int lastCityY;
+    // int lastCityX;
+    // int lastCityY;
     
     while (numCitiesConnected < cityCount)
     {
@@ -133,6 +140,7 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
         if(x == cityPos[0].x && y == cityPos[0].y)
         {
             heapPlot.isCity = true;
+            plots[x][y] = heapPlot;
         }
 
         if(knownArray[x][y] == false)
@@ -140,38 +148,54 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
         else   
             continue;
 
-        for (int i = 1; i < cityCount; i++)
+        // create 1k by 1k array of chars, set them to zero using memset, set 20 cities to true, check using the array 
+        // put edges in paths in dijkstras
+        if (isCityArray[x][y] == '1')
         {
-            if (x == cityPos[i].x && y == cityPos[i].y)
-            {
-                // adjacentPlot.weight = 0;           
-                lastCityX = cityPos[i].x;
-                lastCityY = cityPos[i].y;
+            // adjacentPlot.weight = 0;           
+            // lastCityX = x;
+            // lastCityY = y;
 
+            if(x != cityPos[0].x && y != cityPos[0].y)
+            {
                 heapPlot.isCity = true;
-                // Plot cityPlot = heapPlot;
+                Plot cityPlot = heapPlot;
 
                 // Change city weight and path node weights to 0 and reinsert
-             //   cityPlot.weight = 0;
-             //   heap.insert(cityPlot);
-    
-                if(heapPlot.previousVertex.x != -1 && heapPlot.previousVertex.y != -1)
-                {
-                    Plot previousPlot = plots[heapPlot.previousVertex.x][heapPlot.previousVertex.y];
-
-                    while(!previousPlot.isCity)
-                    {
-                     //   previousPlot.weight = 0;
-
-                        previousPlot = plots[previousPlot.previousVertex.x][previousPlot.previousVertex.y];
-
-                    //    heap.insert(previousPlot);
-                    }
-                }
-
-                numCitiesConnected++;
+                cityPlot.weight = 0;
+                heap.insert(cityPlot);
             }
+
+            if(heapPlot.previousVertex.x != -1 && heapPlot.previousVertex.y != -1)
+            {
+                Plot previousPlot = plots[heapPlot.previousVertex.x][heapPlot.previousVertex.y];
+
+                paths[pathCount].startX = x;
+                paths[pathCount].startY = y;
+                paths[pathCount].endX = previousPlot.x;
+                paths[pathCount].endY = previousPlot.y;
+                pathCount++;
+
+                while(isCityArray[previousPlot.x][previousPlot.y] != '1')
+                {
+                    paths[pathCount].startX = previousPlot.x;
+                    paths[pathCount].startY = previousPlot.y;
+                    paths[pathCount].endX = previousPlot.previousVertex.x;
+                    paths[pathCount].endY = previousPlot.previousVertex.y;
+                    pathCount++;
+
+                    previousPlot.weight = 0;
+
+                    heap.insert(previousPlot);
+
+                    previousPlot = plots[previousPlot.previousVertex.x][previousPlot.previousVertex.y];
+
+                }
+            }
+
+            numCitiesConnected++;
         }
+        
                 
         // int adjacentVertexCount = 8;
         
@@ -188,18 +212,21 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
         {
 
             Plot adjacentPlot = heapPlot.getAdjacentPlot(i, width_);
+
+            // Put right after getAdjacentPlot and change to OR
+            if (adjacentPlot.x == -1 || adjacentPlot.y == -1)
+                continue;
+
             if (knownArray[adjacentPlot.x][adjacentPlot.y] == true)
                 continue;
             adjacentPlot.weight = shortestDistance[adjacentPlot.x][adjacentPlot.y];
 
-            
-            if (adjacentPlot.x == -1 && adjacentPlot.y == -1)
-                continue;
-
             short adjacentPlotElevation = map_[adjacentPlot.x][adjacentPlot.y];
             
-            int weight = (int)(pow(abs(adjacentPlotElevation - elevation), 2) + 10);
+            // Delete pow, replace with *, delete abs
+            int weight = (int)((adjacentPlotElevation - elevation)*(adjacentPlotElevation - elevation) + 10);
             
+            // change to adjacentPlot.weight after <
             if (weight + heapPlot.weight < shortestDistance[adjacentPlot.x][adjacentPlot.y])
             {
 
@@ -208,25 +235,34 @@ void Router::findRoutes(const CityPos *cityPos, int cityCount, Edge *paths, int 
                 // update pv
                 adjacentPlot.previousVertex = PreviousVertex(x,y);
                 plots[adjacentPlot.x][adjacentPlot.y] = adjacentPlot;
-                
+                // heap should have x, y, and weight only  
                 heap.insert(adjacentPlot);
             }
         }
     }
-
     // Traceback
-    Plot lastCityPlot = plots[lastCityX][lastCityY];
+    // Plot lastCityPlot = plots[lastCityX][lastCityY];
 
-    while(lastCityPlot.previousVertex.x != -1 && lastCityPlot.previousVertex.y != -1)
+    // while(lastCityPlot.previousVertex.x != -1 && lastCityPlot.previousVertex.y != -1)
+    // {
+    //     paths[pathCount].startX = lastCityPlot.x;
+    //     paths[pathCount].startY = lastCityPlot.y;
+    //     paths[pathCount].endX = lastCityPlot.previousVertex.x;
+    //     paths[pathCount].endY = lastCityPlot.previousVertex.y;
+    //     pathCount++;
+
+    //     lastCityPlot = plots[lastCityPlot.previousVertex.x][lastCityPlot.previousVertex.y];
+    // }
+
+    // for (int i = 0; i < pathCount; i++)
+    // {
+        // cout << "{startX = " << paths[i].startX << ", startY = " << paths[i].startY << ", endX = " << paths[i].endX << ", endY = " << paths[i].endY << "}" << endl;
+    // }
+
+    for (int i = 0; i < width_; i++)
     {
-        paths[pathCount].startX = lastCityPlot.previousVertex.x;
-        paths[pathCount].startY = lastCityPlot.previousVertex.y;
-        paths[pathCount].endX = lastCityPlot.x;
-        paths[pathCount].endY = lastCityPlot.y;
-        pathCount++;
-
-        lastCityPlot = plots[lastCityPlot.previousVertex.x][lastCityPlot.previousVertex.y];
+        delete [] plots[i];
     }
 
-    cout << "hi" << endl;
+    delete [] plots;
 } // findRoutes()
